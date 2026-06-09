@@ -26,8 +26,7 @@ impl Chart {
 
 #[test]
 fn c() {
-    let a =
-        Chart::load_from_file("/home/eternity/Work/Rust/bin/eternity-melody/debug/spectrum.toml")
-            .unwrap();
+    let a = Chart::load_from_file("/home/eternity/Work/Rust/bin/eternity-melody/debug/搁浅.toml")
+        .unwrap();
     println!("{:?}", a);
 }

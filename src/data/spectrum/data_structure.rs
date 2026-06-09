@@ -13,7 +13,7 @@ pub struct Metadata {
     pub offset: f64,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Note {
     pub time: f64,
     pub lane: usize,

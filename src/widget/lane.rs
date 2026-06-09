@@ -1,5 +1,3 @@
-use std::{thread, time::Duration};
-
 use ratatui::{
     style::{Color, Style},
     symbols::{self, merge::MergeStrategy},

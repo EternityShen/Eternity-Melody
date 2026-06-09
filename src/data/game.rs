@@ -2,8 +2,9 @@ use crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind};
 
 pub struct Game {
     pub quit: bool,
-    pub lane_data: LaneData,
+
     pub gamestate: GameState,
+    pub all_lane_data: Vec<LaneData>,
     pub current_evaluation: &'static str,
     pub player: AudioPlayer,
 }
@@ -42,8 +43,25 @@ impl Note {
 }
 
 pub struct LaneData {
+    pub id: usize,
     pub notes: Vec<Note>,
     pub start_index: usize,
+}
+
+impl LaneData {
+    pub fn new(chart: &spectrum::data_structure::Chart, id: usize) -> Self {
+        let mut notes = Vec::new();
+        for note in chart.notes.clone() {
+            if note.lane == id {
+                notes.push(Note::new(note.time));
+            }
+        }
+        Self {
+            id,
+            notes,
+            start_index: 0,
+        }
+    }
 }
 
 pub struct GameState {
@@ -64,43 +82,24 @@ impl GameState {
     }
 }
 
-impl LaneData {
-    pub fn new(notes: Vec<Note>) -> Self {
-        Self {
-            notes,
-            start_index: 0,
-        }
-    }
-}
-
 impl Game {
     pub fn new(music_path: &str) -> Self {
-        let notes = vec![
-            Note { time: 4.0 }, // 第 4 秒：第一个音符落地（慢速单点）
-            Note { time: 6.0 }, // 第 6 秒：间隔 2 秒（每两拍打一下，极慢）
-            Note { time: 8.0 }, // 第 8 秒
-            // 稍微改变一下节奏，变成每秒一下（标准 4 分音符走带）
-            Note { time: 10.0 }, // 第 10 秒
-            Note { time: 11.0 }, // 第 11 秒
-            Note { time: 12.0 }, // 第 12 秒
-            // 留一段 4 秒的空白，用来观察无音符时 start_index 是否正常、画面是否干净
-            Note { time: 16.0 }, // 第 16 秒
-            Note { time: 18.0 }, // 第 18 秒
-            // 结尾部分：来一组 24 秒到 30 秒的长跨度收尾
-            Note { time: 22.0 },
-            Note { time: 24.0 },
-            Note { time: 27.0 }, // 间隔 3 秒
-            Note { time: 30.0 }, // 第 30 秒，测试结束
-        ];
-        let lanedata = LaneData::new(notes);
         let player = AudioPlayer::new();
         player.play_song(music_path); // 启动音乐
-
         let gamestate = GameState::new(0.0, 16.0);
+        let chart = spectrum::data_structure::Chart::load_from_file(
+            "/home/eternity/Work/Rust/bin/eternity-melody/debug/搁浅.toml",
+        )
+        .unwrap();
+        let mut all_lane_data = Vec::new();
+        for i in 0..4 {
+            let lanedata = LaneData::new(&chart, i);
+            all_lane_data.push(lanedata);
+        }
         Self {
             quit: false,
-            lane_data: lanedata,
             gamestate,
+            all_lane_data,
             current_evaluation: "UnKnow",
             player,
         }
@@ -116,14 +115,15 @@ impl Game {
         self.gamestate.if_perfect = false;
 
         let current_time = self.gamestate.current_time;
-        let notes = &self.lane_data.notes;
-
-        while self.lane_data.start_index < notes.len()
-            && notes[self.lane_data.start_index].time + 0.150 < current_time
-        {
-            self.current_evaluation = "Miss!";
-            self.lane_data.start_index += 1;
-            self.gamestate.rating -= 2;
+        for lane_data in &mut self.all_lane_data {
+            let notes = &lane_data.notes;
+            while lane_data.start_index < notes.len()
+                && notes[lane_data.start_index].time + 0.150 < current_time
+            {
+                self.current_evaluation = "Miss!";
+                lane_data.start_index += 1;
+                self.gamestate.rating -= 2;
+            }
         }
     }
 
@@ -133,20 +133,31 @@ impl Game {
         }
 
         match key_event.code {
-            KeyCode::Char('d') | KeyCode::Char('f') | KeyCode::Char('j') | KeyCode::Char('k') => {
-                self.judge_hit();
+            KeyCode::Char('s') => {
+                self.judge_hit(0);
+            }
+            KeyCode::Char('d') => {
+                self.judge_hit(1);
+            }
+            KeyCode::Char('j') => {
+                self.judge_hit(2);
+            }
+            KeyCode::Char('k') => {
+                self.judge_hit(3);
             }
             _ => {}
         }
     }
 
-    fn judge_hit(&mut self) {
+    fn judge_hit(&mut self, id: usize) {
         let current_time = self.gamestate.current_time;
-        let start = self.lane_data.start_index;
-        let notes = &self.lane_data.notes;
+        let lane_data = &mut self.all_lane_data[id];
+        let start = lane_data.start_index;
+        let notes = &lane_data.notes;
 
         if start >= notes.len() {
             self.current_evaluation = "Miss!";
+            self.gamestate.rating -= 2;
             return;
         }
 
@@ -157,19 +168,24 @@ impl Game {
             self.gamestate.if_perfect = true;
             self.current_evaluation = "Perfect!";
             self.gamestate.rating += 10;
-            self.lane_data.start_index += 1;
+            self.player.play_hit_sound();
+            lane_data.start_index += 1;
             return;
         } else if diff <= 0.090 {
             self.current_evaluation = "Great!";
             self.gamestate.rating += 8;
-            self.lane_data.start_index += 1;
+            lane_data.start_index += 1;
+            self.player.play_hit_sound();
+
             return;
         } else if diff <= 0.150 {
             self.current_evaluation = "Good!";
             self.gamestate.rating += 5;
-            self.lane_data.start_index += 1;
+            lane_data.start_index += 1;
+            self.player.play_hit_sound();
             return;
         }
+        self.player.play_hit_sound();
         self.current_evaluation = "Miss!";
         self.gamestate.rating -= 2;
     }
@@ -183,10 +199,13 @@ use std::{
     time::{Duration, Instant},
 };
 
+use crate::data::spectrum;
+
 pub struct AudioPlayer {
     _stream: OutputStream,
     _handle: OutputStreamHandle,
     pub sink: Sink,
+    pub effect_sink: Sink,
     start_time: Option<Instant>,
     paused_duration: Duration,
 }
@@ -195,10 +214,12 @@ impl AudioPlayer {
     pub fn new() -> Self {
         let (stream, handle) = OutputStream::try_default().unwrap();
         let sink = Sink::try_new(&handle).unwrap();
+        let effect_sink = Sink::try_new(&handle).unwrap();
         Self {
             _stream: stream,
             _handle: handle,
             sink,
+            effect_sink,
             start_time: None,
             paused_duration: Duration::ZERO,
         }
@@ -221,6 +242,14 @@ impl AudioPlayer {
         let source = Decoder::new(BufReader::new(file)).expect("无法解码音频");
         self.sink.append(source);
         self.sink.play();
+    }
+
+    pub fn play_hit_sound(&self) {
+        let file =
+            std::fs::File::open("/home/eternity/Work/Rust/bin/eternity-melody/debug/敲击.wav")
+                .unwrap();
+        let source = rodio::Decoder::new(std::io::BufReader::new(file)).unwrap();
+        self.effect_sink.append(source);
     }
 }
 

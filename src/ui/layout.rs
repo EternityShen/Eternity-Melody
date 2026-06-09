@@ -110,10 +110,10 @@ pub fn draw(
     .spacing(Overlap(1))
     .split(chunks_main_v[1]);
 
-    let lane_d = LaneWidget::new("D", &game.lane_data, &game.gamestate);
-    let lane_f = LaneWidget::new("F", &game.lane_data, &game.gamestate);
-    let lane_j = LaneWidget::new("J", &game.lane_data, &game.gamestate);
-    let lane_k = LaneWidget::new("K", &game.lane_data, &game.gamestate);
+    let lane_d = LaneWidget::new("S", &game.all_lane_data[0], &game.gamestate);
+    let lane_f = LaneWidget::new("D", &game.all_lane_data[1], &game.gamestate);
+    let lane_j = LaneWidget::new("J", &game.all_lane_data[2], &game.gamestate);
+    let lane_k = LaneWidget::new("K", &game.all_lane_data[3], &game.gamestate);
 
     frame.render_widget(lane_d, chunks_rail[1]);
     frame.render_widget(lane_f, chunks_rail[2]);
