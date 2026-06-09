@@ -15,7 +15,7 @@ fn main() -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     let (tx, rx) = mpsc::channel();
-    let mut game = Game::new();
+    let mut game = Game::new("/home/eternity/Music/搁浅.mp3");
     let image_path = Path::new("/home/eternity/Work/Rust/bin/eternity-melody/avatar.png");
     let dyn_image = image::open(image_path).unwrap();
     let mut image_static = picker.new_resize_protocol(dyn_image);

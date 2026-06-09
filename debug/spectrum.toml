@@ -1,0 +1,21 @@
+[metadata]
+title = "Eternity-Melody"
+bpm = 120
+offset = -0.05
+
+
+[[notes]]
+time = 12.5
+lane = 0
+
+[[notes]]
+time = 13.0
+lane = 1
+
+[[notes]]
+time = 15.0
+lane = 2
+
+[[notes]]
+time = 16.0
+lane = 3

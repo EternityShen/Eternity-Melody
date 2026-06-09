@@ -9,4 +9,6 @@ logger = {path = "/home/eternity/Work/Rust/lib/logger/"}
 ratatui = "0.30.1"
 ratatui-image = "11.0.4"
 image = "0.25.10"
-
+serde = { version = "1.0", features = ["derive"] }
+toml = "1.1.2+spec-1.1.0"
+rodio = "0.17.3"

@@ -5,6 +5,7 @@ pub struct Game {
     pub lane_data: LaneData,
     pub gamestate: GameState,
     pub current_evaluation: &'static str,
+    pub player: AudioPlayer,
 }
 
 pub enum GameEvent {
@@ -73,7 +74,7 @@ impl LaneData {
 }
 
 impl Game {
-    pub fn new() -> Self {
+    pub fn new(music_path: &str) -> Self {
         let notes = vec![
             Note { time: 4.0 }, // 第 4 秒：第一个音符落地（慢速单点）
             Note { time: 6.0 }, // 第 6 秒：间隔 2 秒（每两拍打一下，极慢）
@@ -92,6 +93,8 @@ impl Game {
             Note { time: 30.0 }, // 第 30 秒，测试结束
         ];
         let lanedata = LaneData::new(notes);
+        let player = AudioPlayer::new();
+        player.play_song(music_path); // 启动音乐
 
         let gamestate = GameState::new(0.0, 16.0);
         Self {
@@ -99,7 +102,12 @@ impl Game {
             lane_data: lanedata,
             gamestate,
             current_evaluation: "UnKnow",
+            player,
         }
+    }
+
+    pub fn sync_time(&mut self) {
+        self.gamestate.current_time = self.player.get_playback_time();
     }
 
     pub fn update_tick(&mut self) {
@@ -167,7 +175,56 @@ impl Game {
     }
 }
 
-impl Default for Game {
+use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
+use std::{
+    fs::File,
+    io::BufReader,
+    path::Path,
+    time::{Duration, Instant},
+};
+
+pub struct AudioPlayer {
+    _stream: OutputStream,
+    _handle: OutputStreamHandle,
+    pub sink: Sink,
+    start_time: Option<Instant>,
+    paused_duration: Duration,
+}
+
+impl AudioPlayer {
+    pub fn new() -> Self {
+        let (stream, handle) = OutputStream::try_default().unwrap();
+        let sink = Sink::try_new(&handle).unwrap();
+        Self {
+            _stream: stream,
+            _handle: handle,
+            sink,
+            start_time: None,
+            paused_duration: Duration::ZERO,
+        }
+    }
+
+    pub fn get_playback_time(&self) -> f64 {
+        if self.sink.is_paused() {
+            return self.paused_duration.as_secs_f64();
+        }
+
+        match self.start_time {
+            Some(start) => start.elapsed().as_secs_f64(),
+            None => 0.0,
+        }
+    }
+
+    pub fn play_song(&self, path: impl AsRef<Path>) {
+        self.sink.stop();
+        let file = File::open(path).expect("无法打开音乐文件");
+        let source = Decoder::new(BufReader::new(file)).expect("无法解码音频");
+        self.sink.append(source);
+        self.sink.play();
+    }
+}
+
+impl Default for AudioPlayer {
     fn default() -> Self {
         Self::new()
     }
