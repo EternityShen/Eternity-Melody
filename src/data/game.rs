@@ -2,7 +2,6 @@ use crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind};
 
 pub struct Game {
     pub quit: bool,
-
     pub gamestate: GameState,
     pub all_lane_data: Vec<LaneData>,
     pub current_evaluation: &'static str,
@@ -78,6 +77,7 @@ pub struct GameState {
     pub current_time: f64,
     pub speed: f64,
     pub if_perfect: bool,
+    pub perfect_fps: u8,
     pub rating: i64,
 }
 
@@ -87,6 +87,7 @@ impl GameState {
             current_time,
             speed,
             if_perfect: false,
+            perfect_fps: 0,
             rating: 0,
         }
     }
@@ -122,7 +123,11 @@ impl Game {
     pub fn update_tick(&mut self) {
         self.gamestate.current_time += 0.010;
         self.gamestate.speed += 0.001;
-        self.gamestate.if_perfect = false;
+        self.gamestate.perfect_fps += 1;
+        if self.gamestate.perfect_fps > 20 {
+            self.gamestate.perfect_fps = 0;
+            self.gamestate.if_perfect = false;
+        }
 
         let current_time = self.gamestate.current_time;
         for lane_data in &mut self.all_lane_data {
@@ -176,6 +181,7 @@ impl Game {
 
         if diff <= 0.045 {
             self.gamestate.if_perfect = true;
+            self.gamestate.perfect_fps = 0;
             self.current_evaluation = "Perfect!";
             self.gamestate.rating += 10;
             // self.player.play_hit_sound();

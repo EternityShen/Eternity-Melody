@@ -6,6 +6,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 use ratatui_image::StatefulImage;
+use tui_big_text::BigText;
 
 use crate::{data::game::Game, widget::lane::LaneWidget};
 
@@ -119,4 +120,28 @@ pub fn draw(
     frame.render_widget(lane_f, chunks_rail[2]);
     frame.render_widget(lane_j, chunks_rail[3]);
     frame.render_widget(lane_k, chunks_rail[4]);
+
+    if game.gamestate.if_perfect {
+        let chunks_big_text_v = Layout::vertical([
+            Constraint::Length(3),
+            Constraint::Length(20),
+            Constraint::Fill(1),
+        ])
+        .split(chunks_main_v[1]);
+
+        let chunks_big_text = Layout::horizontal([
+            Constraint::Percentage(15),
+            Constraint::Percentage(70),
+            Constraint::Percentage(15),
+        ])
+        .split(chunks_big_text_v[1]);
+
+        let big_text = BigText::builder()
+            .pixel_size(tui_big_text::PixelSize::Full)
+            .style(Style::new().blue())
+            .lines(vec!["Perfect!!!!".blue().into()])
+            .build();
+
+        frame.render_widget(big_text, chunks_big_text[1]);
+    }
 }

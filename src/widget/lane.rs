@@ -70,22 +70,22 @@ impl Widget for LaneWidget<'_> {
             let end_x = (center_x as i16 + 2).min(area.right() as i16 - 2) as u16;
 
             for x in start_x..=end_x {
-                buf[(x, actual_y)].set_symbol(symbol).set_fg(Color::Cyan); // 改用亮一点的青色，视觉残留更顺滑
+                buf[(x, actual_y)].set_symbol(symbol).set_fg(Color::Cyan);
             }
         }
-        let mut a = 1;
 
-        if self.gamestate.if_perfect {
-            for y in judge_y - 5..judge_y {
-                let start_x = (center_x as i16 - a).max(area.left() as i16 + a) as u16;
-                let end_x = (center_x as i16 + a).min(area.right() as i16 - a) as u16;
-                for x in start_x..end_x {
-                    buf[(x, y)]
-                        .set_symbol("=")
-                        .set_style(Style::default().fg(Color::Yellow));
-                }
-                a += 2;
-            }
-        }
+        // let mut a = 1;
+        // if self.gamestate.if_perfect {
+        //     for y in judge_y - 5..judge_y {
+        //         let start_x = (center_x as i16 - a).max(area.left() as i16 + a) as u16;
+        //         let end_x = (center_x as i16 + a).min(area.right() as i16 - a) as u16;
+        //         for x in start_x..end_x {
+        //             buf[(x, y)]
+        //                 .set_symbol("=")
+        //                 .set_style(Style::default().fg(Color::Yellow));
+        //         }
+        //         a += 2;
+        //     }
+        // }
     }
 }
