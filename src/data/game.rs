@@ -9,6 +9,16 @@ pub struct Game {
     pub player: AudioPlayer,
 }
 
+use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
+use std::{
+    fs::File,
+    io::{BufReader, Cursor},
+    path::Path,
+    time::{Duration, Instant},
+};
+
+use crate::data::spectrum;
+
 pub enum GameEvent {
     Tick,
     Key(event::KeyEvent),
@@ -168,38 +178,27 @@ impl Game {
             self.gamestate.if_perfect = true;
             self.current_evaluation = "Perfect!";
             self.gamestate.rating += 10;
-            self.player.play_hit_sound();
+            // self.player.play_hit_sound();
             lane_data.start_index += 1;
             return;
         } else if diff <= 0.090 {
             self.current_evaluation = "Great!";
             self.gamestate.rating += 8;
             lane_data.start_index += 1;
-            self.player.play_hit_sound();
+            // self.player.play_hit_sound();
 
             return;
         } else if diff <= 0.150 {
             self.current_evaluation = "Good!";
             self.gamestate.rating += 5;
             lane_data.start_index += 1;
-            self.player.play_hit_sound();
+            // self.player.play_hit_sound();
             return;
         }
-        self.player.play_hit_sound();
         self.current_evaluation = "Miss!";
         self.gamestate.rating -= 2;
     }
 }
-
-use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
-use std::{
-    fs::File,
-    io::BufReader,
-    path::Path,
-    time::{Duration, Instant},
-};
-
-use crate::data::spectrum;
 
 pub struct AudioPlayer {
     _stream: OutputStream,
@@ -208,6 +207,7 @@ pub struct AudioPlayer {
     pub effect_sink: Sink,
     start_time: Option<Instant>,
     paused_duration: Duration,
+    hit_sound_data: Vec<u8>,
 }
 
 impl AudioPlayer {
@@ -215,6 +215,9 @@ impl AudioPlayer {
         let (stream, handle) = OutputStream::try_default().unwrap();
         let sink = Sink::try_new(&handle).unwrap();
         let effect_sink = Sink::try_new(&handle).unwrap();
+        let hit_sound_data =
+            std::fs::read("/home/eternity/Work/Rust/bin/eternity-melody/debug/敲击.wav")
+                .expect("加载音效失败");
         Self {
             _stream: stream,
             _handle: handle,
@@ -222,6 +225,7 @@ impl AudioPlayer {
             effect_sink,
             start_time: None,
             paused_duration: Duration::ZERO,
+            hit_sound_data,
         }
     }
 
@@ -245,10 +249,8 @@ impl AudioPlayer {
     }
 
     pub fn play_hit_sound(&self) {
-        let file =
-            std::fs::File::open("/home/eternity/Work/Rust/bin/eternity-melody/debug/敲击.wav")
-                .unwrap();
-        let source = rodio::Decoder::new(std::io::BufReader::new(file)).unwrap();
+        let cursor = Cursor::new(self.hit_sound_data.clone());
+        let source = rodio::Decoder::new(cursor).unwrap();
         self.effect_sink.append(source);
     }
 }
