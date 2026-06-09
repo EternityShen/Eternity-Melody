@@ -4,7 +4,7 @@ pub struct Game {
     pub quit: bool,
     pub lane_data: LaneData,
     pub gamestate: GameState,
-    pub current_evaluation: String,
+    pub current_evaluation: &'static str,
 }
 
 pub enum GameEvent {
@@ -48,6 +48,8 @@ pub struct LaneData {
 pub struct GameState {
     pub current_time: f64,
     pub speed: f64,
+    pub if_perfect: bool,
+    pub rating: i64,
 }
 
 impl GameState {
@@ -55,6 +57,8 @@ impl GameState {
         Self {
             current_time,
             speed,
+            if_perfect: false,
+            rating: 0,
         }
     }
 }
@@ -94,22 +98,24 @@ impl Game {
             quit: false,
             lane_data: lanedata,
             gamestate,
-            current_evaluation: String::from("UnKnow"),
+            current_evaluation: "UnKnow",
         }
     }
 
     pub fn update_tick(&mut self) {
-        self.gamestate.current_time += 0.012;
+        self.gamestate.current_time += 0.010;
         self.gamestate.speed += 0.001;
+        self.gamestate.if_perfect = false;
 
         let current_time = self.gamestate.current_time;
         let notes = &self.lane_data.notes;
 
         while self.lane_data.start_index < notes.len()
-            && notes[self.lane_data.start_index].time < current_time - 0.5
+            && notes[self.lane_data.start_index].time + 0.150 < current_time
         {
-            self.current_evaluation = String::from("Miss!");
+            self.current_evaluation = "Miss!";
             self.lane_data.start_index += 1;
+            self.gamestate.rating -= 2;
         }
     }
 
@@ -132,7 +138,7 @@ impl Game {
         let notes = &self.lane_data.notes;
 
         if start >= notes.len() {
-            self.current_evaluation = String::from("Miss!");
+            self.current_evaluation = "Miss!";
             return;
         }
 
@@ -140,19 +146,24 @@ impl Game {
         let diff = (note_time - current_time).abs();
 
         if diff <= 0.045 {
-            self.current_evaluation = String::from("Perfect!");
-            self.lane_data.start_index += 1; // 击中了，这个音符任务完成，移出判定区
+            self.gamestate.if_perfect = true;
+            self.current_evaluation = "Perfect!";
+            self.gamestate.rating += 10;
+            self.lane_data.start_index += 1;
             return;
         } else if diff <= 0.090 {
-            self.current_evaluation = String::from("Great!");
+            self.current_evaluation = "Great!";
+            self.gamestate.rating += 8;
             self.lane_data.start_index += 1;
             return;
         } else if diff <= 0.150 {
-            self.current_evaluation = String::from("Good!");
+            self.current_evaluation = "Good!";
+            self.gamestate.rating += 5;
             self.lane_data.start_index += 1;
             return;
         }
-        self.current_evaluation = String::from("Miss!");
+        self.current_evaluation = "Miss!";
+        self.gamestate.rating -= 2;
     }
 }
 

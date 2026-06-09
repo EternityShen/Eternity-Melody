@@ -1,3 +1,5 @@
+use std::{thread, time::Duration};
+
 use ratatui::{
     style::{Color, Style},
     symbols::{self, merge::MergeStrategy},
@@ -45,7 +47,7 @@ impl Widget for LaneWidget<'_> {
         for note in &self.lane.notes[self.lane.start_index..] {
             let delta = note.time - self.gamestate.current_time;
 
-            // 乘以 2 是因为我们要计算“半行”的距离
+            // 乘以 2 是因为要计算“半行”的距离
             let distance_in_half_rows = delta * self.gamestate.speed * 2.0;
 
             // 计算出音符在“半行”尺度下的虚拟 Y 坐标
@@ -66,12 +68,25 @@ impl Widget for LaneWidget<'_> {
             // 决定使用的方块符号：上半格还是下半格
             let symbol = if is_top_half { "▀" } else { "▄" };
 
-            // 严格的左右边界检查，防止越界 Panic
             let start_x = (center_x as i16 - 2).max(area.left() as i16 + 1) as u16;
             let end_x = (center_x as i16 + 2).min(area.right() as i16 - 2) as u16;
 
             for x in start_x..=end_x {
                 buf[(x, actual_y)].set_symbol(symbol).set_fg(Color::Cyan); // 改用亮一点的青色，视觉残留更顺滑
+            }
+        }
+        let mut a = 1;
+
+        if self.gamestate.if_perfect {
+            for y in judge_y - 5..judge_y {
+                let start_x = (center_x as i16 - a).max(area.left() as i16 + a) as u16;
+                let end_x = (center_x as i16 + a).min(area.right() as i16 - a) as u16;
+                for x in start_x..end_x {
+                    buf[(x, y)]
+                        .set_symbol("=")
+                        .set_style(Style::default().fg(Color::Yellow));
+                }
+                a += 2;
             }
         }
     }

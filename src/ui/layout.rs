@@ -57,7 +57,7 @@ pub fn draw(
 
     let chunks_right = Layout::vertical([
         Constraint::Length(3),
-        Constraint::Length(1),
+        Constraint::Length(3),
         Constraint::Percentage(50),
         Constraint::Percentage(50),
     ])
@@ -65,16 +65,31 @@ pub fn draw(
 
     frame.render_widget(block, chunks_main[1]);
 
-    let evaluation = Paragraph::new(game.current_evaluation.clone())
-        .block(Block::default().borders(Borders::ALL).fg(Color::Cyan));
+    let evaluation = Paragraph::new(game.current_evaluation).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .fg(Color::Cyan)
+            .title("评价"),
+    );
     frame.render_widget(evaluation, chunks_right[0]);
 
-    let image_block = Block::default().title("暇碟").borders(Borders::ALL);
+    let image_block = Block::default()
+        .title("暇碟")
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Green));
     let inner_area = image_block.inner(chunks_right[2]);
     let image_widget =
         StatefulImage::new().resize(ratatui_image::Resize::Crop(core::option::Option::None));
     frame.render_widget(image_block, chunks_right[2]);
     frame.render_stateful_widget(image_widget, inner_area, image_static);
+
+    let rating = Paragraph::new(game.gamestate.rating.to_string()).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Green))
+            .title("评分"),
+    );
+    frame.render_widget(rating, chunks_right[1]);
 
     let chunks_main_v = Layout::vertical([
         Constraint::Length(2),
